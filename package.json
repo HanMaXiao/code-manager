@@ -22,7 +22,7 @@
         "title": "切换书签面板"
       },
       {
-        "command": "codeManager.toggleCollectionPanel", 
+        "command": "codeManager.toggleCollectionPanel",
         "title": "切换集合面板"
       },
       {
@@ -30,8 +30,16 @@
         "title": "添加书签"
       },
       {
+        "command": "codeManager.createCollection",
+        "title": "创建集合"
+      },
+      {
         "command": "codeManager.addToCollection",
         "title": "添加到集合"
+      },
+      {
+        "command": "codeManager.openBookmark",
+        "title": "打开书签"
       }
     ],
     "menus": {
@@ -41,17 +49,33 @@
           "group": "navigation"
         },
         {
-          "command": "codeManager.addToCollection",
+          "submenu": "codeManager.collectionSubmenu",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "command": "codeManager.addToCollection",
+          "submenu": "codeManager.collectionSubmenu",
           "group": "navigation"
+        }
+      ],
+      "codeManager.collectionSubmenu": [
+        {
+          "command": "codeManager.createCollection",
+          "group": "1_create@1"
+        },
+        {
+          "command": "codeManager.addToCollection",
+          "group": "2_add@1"
         }
       ]
     },
+    "submenus": [
+      {
+        "id": "codeManager.collectionSubmenu",
+        "label": "代码管理者"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -65,13 +89,11 @@
       "codeManager": [
         {
           "id": "bookmarkPanel",
-          "name": "书签管理",
-          "when": "true"
+          "name": "书签管理"
         },
         {
-          "id": "collectionPanel", 
-          "name": "集合管理",
-          "when": "true"
+          "id": "collectionPanel",
+          "name": "集合管理"
         }
       ]
     }

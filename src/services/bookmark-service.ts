@@ -31,7 +31,10 @@ export class BookmarkService {
   public async createBookmark(params: CreateBookmarkParams): Promise<Bookmark> {
     // 检查同一位置是否已有书签
     const existingBookmark = this.bookmarks.find(
-      b => b.filePath === params.filePath && b.lineNumber === params.lineNumber
+      b => b.filePath === params.filePath &&
+          b.lineNumber === params.lineNumber &&
+          b.startLine === params.startLine &&
+          b.endLine === params.endLine
     );
 
     if (existingBookmark) {
@@ -46,7 +49,7 @@ export class BookmarkService {
 
     this.bookmarks.push(newBookmark);
     await this.saveBookmarks();
-    
+
     vscode.window.showInformationMessage(`书签"${params.text}"创建成功`);
     return newBookmark;
   }

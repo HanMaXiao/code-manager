@@ -51,6 +51,29 @@ export class NavigationService {
   }
 
   /**
+   * 获取当前活动编辑器的选中范围信息
+   */
+  public getCurrentSelectionInfo(): {
+    filePath: string;
+    lineNumber: number;
+    startLine: number;
+    endLine: number;
+  } | null {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return null;
+    }
+
+    const filePath = editor.document.uri.fsPath;
+    const selection = editor.selection;
+    const lineNumber = selection.active.line + 1;
+    const startLine = selection.start.line + 1;
+    const endLine = selection.end.line + 1;
+
+    return { filePath, lineNumber, startLine, endLine };
+  }
+
+  /**
    * 验证文件是否存在且可访问
    */
   public async validateFileExists(filePath: string): Promise<boolean> {

@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>添加到集合</title>
+  <style>
+    :root {
+      --background: var(--vscode-input-background, #3c3c3c);
+      --foreground: var(--vscode-input-foreground, #cccccc);
+      --border: var(--vscode-input-border, #3c3c3c);
+      --focus-border: var(--vscode-focusBorder, #007fd4);
+      --button-background: var(--vscode-button-background, #0e639c);
+      --button-hover: var(--vscode-button-hoverBackground, #1177bb);
+      --button-foreground: var(--vscode-button-foreground, #ffffff);
+    }
+
+    body {
+      font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--foreground);
+      background-color: var(--vscode-editor-background, #1e1e1e);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .dialog-container {
+      max-width: 450px;
+      margin: 0 auto;
+    }
+
+    .dialog-header {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .dialog-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 5px 0;
+    }
+
+    .dialog-subtitle {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground, #999999);
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .collection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .collection-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      background: var(--background);
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .collection-item:hover {
+      background: var(--vscode-list-hoverBackground, #2a2d2e);
+      border-color: var(--focus-border);
+    }
+
+    .collection-item.selected {
+      background: var(--vscode-list-activeSelectionBackground, #094771);
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 2px rgba(0, 127, 212, 0.3);
+    }
+
+    .collection-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      font-size: 18px;
+    }
+
+    .collection-info {
+      flex: 1;
+    }
+
+    .collection-name {
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .collection-meta {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #999999);
+    }
+
+    .file-preview {
+      margin-top: 15px;
+      padding: 12px;
+      background: var(--vscode-sideBar-background, #252526);
+      border-radius: 4px;
+      border-left: 3px solid var(--focus-border);
+    }
+
+    .file-preview-title {
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+
+    .file-icon {
+      color: var(--vscode-descriptionForeground, #999999);
+    }
+
+    .empty-collections {
+      text-align: center;
+      padding: 30px;
+      color: var(--vscode-descriptionForeground, #999999);
+      font-size: 13px;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 2px;
+      font-family: inherit;
+      font-size: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--button-background);
+      color: var(--button-foreground);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--button-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--vscode-button-secondaryBackground, #3a3d41);
+      color: var(--vscode-button-secondaryForeground, #ffffff);
+    }
+
+    .btn-secondary:hover {
+      background: var(--vscode-button-secondaryHoverBackground, #45494e);
+    }
+  </style>
+</head>
+<body>
+  <div class="dialog-container">
+    <div class="dialog-header">
+      <h2 class="dialog-title">添加到集合</h2>
+      <p class="dialog-subtitle">选择一个集合来添加选中的文件</p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">选择集合</label>
+      <div class="collection-list" id="collectionList">
+        <!-- 集合列表将通过JavaScript动态生成 -->
+      </div>
+    </div>
+
+    <div class="file-preview">
+      <div class="file-preview-title">
+        <span>📄</span>
+        <span>要添加的文件</span>
+      </div>
+      <div id="fileList">
+        <div class="empty-state">暂无文件</div>
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+      <button type="button" class="btn btn-primary" id="addBtn" disabled>添加到集合</button>
+    </div>
+  </div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+
+    let selectedCollectionId = null;
+    let selectedFiles = [];
+    let collections = [];
+
+    // 获取图标的符号表示
+    function getIconSymbol(iconName) {
+      const iconMap = {
+        'folder': '📁',
+        'repo': '📦',
+        'package': '🎁',
+        'project': '🏗️',
+        'library': '📚',
+        'box': '📦',
+        'archive': '🗃️',
+        'container': '📦',
+        'bundle': '묶',
+        'collection': '📂'
+      };
+      return iconMap[iconName] || '📁';
+    }
+
+    // 更新集合列表显示
+    function updateCollectionList() {
+      const container = document.getElementById('collectionList');
+
+      if (collections.length === 0) {
+        container.innerHTML = `
+          <div class="empty-collections">
+            <div class="empty-icon">📭</div>
+            <div>暂无集合</div>
+            <div style="margin-top: 10px; font-size: 11px;">请先创建一个集合</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = collections.map(collection => `
+        <div class="collection-item ${collection.id === selectedCollectionId ? 'selected' : ''}"
+             data-collection-id="${collection.id}">
+          <div class="collection-icon" style="background-color: ${collection.color}20; color: ${collection.color};">
+            ${getIconSymbol(collection.icon)}
+          </div>
+          <div class="collection-info">
+            <div class="collection-name">${collection.name}</div>
+            <div class="collection-meta">ID: ${collection.id}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // 添加点击事件
+      container.querySelectorAll('.collection-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const collectionId = item.dataset.collectionId;
+          selectCollection(collectionId);
+        });
+      });
+    }
+
+    // 选择集合
+    function selectCollection(collectionId) {
+      selectedCollectionId = collectionId;
+
+      // 更新UI
+      document.querySelectorAll('.collection-item').forEach(item => {
+        if (item.dataset.collectionId === collectionId) {
+          item.classList.add('selected');
+        } else {
+          item.classList.remove('selected');
+        }
+      });
+
+      // 启用/禁用添加按钮
+      updateAddButton();
+    }
+
+    // 更新文件列表显示
+    function updateFileList() {
+      const fileList = document.getElementById('fileList');
+
+      if (selectedFiles.length === 0) {
+        fileList.innerHTML = '<div class="empty-state">暂无文件</div>';
+        return;
+      }
+
+      fileList.innerHTML = selectedFiles.map(file => {
+        const fileName = file.split('/').pop() || file.split('\\').pop() || file;
+        return `
+          <div class="file-item">
+            <span class="file-icon">📄</span>
+            <span>${fileName}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新添加按钮状态
+    function updateAddButton() {
+      const addBtn = document.getElementById('addBtn');
+      addBtn.disabled = !selectedCollectionId || selectedFiles.length === 0;
+    }
+
+    // 添加按钮点击处理
+    document.getElementById('addBtn').addEventListener('click', () => {
+      if (!selectedCollectionId) {
+        alert('请选择一个集合');
+        return;
+      }
+
+      if (selectedFiles.length === 0) {
+        alert('没有要添加的文件');
+        return;
+      }
+
+      vscode.postMessage({
+        command: 'addToCollection',
+        data: {
+          collectionId: selectedCollectionId,
+          files: selectedFiles
+        }
+      });
+    });
+
+    // 取消按钮处理
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      vscode.postMessage({
+        command: 'cancel'
+      });
+    });
+
+    // 监听来自扩展的消息
+    window.addEventListener('message', event => {
+      const message = event.data;
+
+      switch (message.command) {
+        case 'initialize':
+          selectedFiles = message.files || [];
+          collections = message.collections || [];
+          updateCollectionList();
+          updateFileList();
+          updateAddButton();
+          break;
+      }
+    });
+
+    console.log('添加到集合对话框已加载');
+  </script>
+</body>
+</html>

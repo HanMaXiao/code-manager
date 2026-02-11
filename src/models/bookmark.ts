@@ -18,6 +18,10 @@ export interface Bookmark {
   createTime: Date;
   /** 关联的集合ID（可选） */
   collectionId?: string;
+  /** 代码块起始行号 */
+  startLine: number;
+  /** 代码块结束行号 */
+  endLine: number;
 }
 
 /**
@@ -36,6 +40,10 @@ export interface CreateBookmarkParams {
   icon: string;
   /** 关联的集合ID（可选） */
   collectionId?: string;
+  /** 代码块起始行号 */
+  startLine: number;
+  /** 代码块结束行号 */
+  endLine: number;
 }
 
 /**

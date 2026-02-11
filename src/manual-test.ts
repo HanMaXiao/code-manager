@@ -53,6 +53,8 @@ async function runManualTests() {
     const bookmark1 = await bookmarkService.createBookmark({
       filePath: '/test/project/main.ts',
       lineNumber: 25,
+      startLine: 20,
+      endLine: 30,
       text: '主函数入口',
       color: ColorUtils.getRandomColor(),
       icon: IconUtils.getRandomIcon()
@@ -62,6 +64,8 @@ async function runManualTests() {
     const bookmark2 = await bookmarkService.createBookmark({
       filePath: '/test/project/utils.ts',
       lineNumber: 10,
+      startLine: 8,
+      endLine: 15,
       text: '工具函数',
       color: ColorUtils.getRandomColor(),
       icon: IconUtils.getRandomIcon()
