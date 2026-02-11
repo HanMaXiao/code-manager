@@ -59,6 +59,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(...disposables);
 
+    console.log('[扩展] 书签视图提供商已注册');
+    console.log('[扩展] 集合视图提供商已注册');
+
     console.log('代码管理者插件初始化完成');
   } catch (error) {
     console.error('代码管理者插件激活失败:', error);
