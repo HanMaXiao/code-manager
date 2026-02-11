@@ -114,11 +114,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/code-manager.git"
+    "url": "https://github.com/HanMaXiao/code-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/code-manager/issues"
+    "url": "https://github.com/HanMaXiao/code-manager/issues"
   },
-  "homepage": "https://github.com/your-username/code-manager/blob/main/README.md",
+  "homepage": "https://github.com/HanMaXiao/code-manager/blob/main/README.md",
   "license": "MIT"
 }
