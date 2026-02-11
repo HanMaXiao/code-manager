@@ -235,7 +235,7 @@
           <span>要添加的文件</span>
         </div>
         <div id="fileList">
-          <div class="empty-state">暂无文件</div>
+          <div class="empty-state">暂无文件，请右键点击文件后选择"添加到集合"</div>
         </div>
       </div>
 
@@ -355,18 +355,22 @@
     // 更新文件列表显示
     function updateFileList() {
       const fileList = document.getElementById('fileList');
-      
+
       if (selectedFiles.length === 0) {
         fileList.innerHTML = '<div class="empty-state">暂无文件</div>';
         return;
       }
-      
-      fileList.innerHTML = selectedFiles.map(file => `
-        <div class="file-item">
-          <span class="file-icon">📄</span>
-          <span>${file}</span>
-        </div>
-      `).join('');
+
+      fileList.innerHTML = selectedFiles.map(file => {
+        // 提取文件名（处理Windows和Unix路径）
+        const fileName = file.split('/').pop() || file.split('\\').pop() || file;
+        return `
+          <div class="file-item">
+            <span class="file-icon">📄</span>
+            <span title="${file}">${fileName}</span>
+          </div>
+        `;
+      }).join('');
     }
 
     // 表单提交处理

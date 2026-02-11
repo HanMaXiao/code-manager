@@ -29,15 +29,21 @@ export class BookmarkService {
    * 创建新书签
    */
   public async createBookmark(params: CreateBookmarkParams): Promise<Bookmark> {
+    // 检查书签文本是否已存在
+    const existingByText = this.bookmarks.find(b => b.text === params.text);
+    if (existingByText) {
+      throw new Error(`书签文本"${params.text}"已存在，请使用不同的文本`);
+    }
+
     // 检查同一位置是否已有书签
-    const existingBookmark = this.bookmarks.find(
+    const existingByPosition = this.bookmarks.find(
       b => b.filePath === params.filePath &&
           b.lineNumber === params.lineNumber &&
           b.startLine === params.startLine &&
           b.endLine === params.endLine
     );
 
-    if (existingBookmark) {
+    if (existingByPosition) {
       throw new Error('当前位置已存在书签');
     }
 
@@ -86,8 +92,8 @@ export class BookmarkService {
 
     const deletedBookmark = this.bookmarks.splice(index, 1)[0];
     await this.saveBookmarks();
-    
-    vscode.window.showInformationMessage(`书签"${deletedBookmark.text}"已删除`);
+
+    // 不显示信息，由调用方处理
     return true;
   }
 

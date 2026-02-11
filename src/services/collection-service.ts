@@ -78,8 +78,8 @@ export class CollectionService {
 
     const deletedCollection = this.collections.splice(index, 1)[0];
     await this.saveCollections();
-    
-    vscode.window.showInformationMessage(`集合"${deletedCollection.name}"已删除`);
+
+    // 不显示信息，由调用方处理
     return true;
   }
 

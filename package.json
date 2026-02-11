@@ -40,14 +40,18 @@
       {
         "command": "codeManager.openBookmark",
         "title": "打开书签"
+      },
+      {
+        "command": "codeManager.deleteBookmark",
+        "title": "删除书签"
+      },
+      {
+        "command": "codeManager.deleteCollection",
+        "title": "删除集合"
       }
     ],
     "menus": {
       "editor/context": [
-        {
-          "command": "codeManager.addBookmark",
-          "group": "navigation"
-        },
         {
           "submenu": "codeManager.collectionSubmenu",
           "group": "navigation"
@@ -61,12 +65,28 @@
       ],
       "codeManager.collectionSubmenu": [
         {
+          "command": "codeManager.addBookmark",
+          "group": "1_bookmark@1"
+        },
+        {
           "command": "codeManager.createCollection",
-          "group": "1_create@1"
+          "group": "2_create@1"
         },
         {
           "command": "codeManager.addToCollection",
-          "group": "2_add@1"
+          "group": "3_add@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "codeManager.deleteBookmark",
+          "when": "view == bookmarkPanel",
+          "group": "inline"
+        },
+        {
+          "command": "codeManager.deleteCollection",
+          "when": "view == collectionPanel",
+          "group": "inline"
         }
       ]
     },

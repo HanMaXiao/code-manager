@@ -105,6 +105,28 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!selectedFiles) {
           selectedFiles = getSelectedFilesFromExplorer();
         }
+
+        // 如果没有获取到文件，提示用户
+        if (selectedFiles.length === 0) {
+          vscode.window.showErrorMessage('没有可添加的文件');
+          return;
+        }
+
+        // 检查是否有集合存在
+        const collections = collectionService.getAllCollections();
+        if (collections.length === 0) {
+          // 没有集合，提示创建集合
+          const createChoice = await vscode.window.showInformationMessage(
+            '当前没有集合，请先创建一个集合',
+            '创建集合',
+            '取消'
+          );
+          if (createChoice === '创建集合') {
+            await sidebarPanel.showCreateCollectionDialog(selectedFiles);
+          }
+          return;
+        }
+
         await sidebarPanel.showAddToCollectionDialog(selectedFiles);
       }),
 
@@ -184,6 +206,7 @@ export async function activate(context: vscode.ExtensionContext) {
           const treeItem = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
           treeItem.tooltip = element.filePath;
           treeItem.iconPath = new vscode.ThemeIcon('file');
+          treeItem.contextValue = element.filePath;
           treeItem.command = {
             command: 'codeManager.openFile',
             title: '打开文件',
@@ -191,6 +214,7 @@ export async function activate(context: vscode.ExtensionContext) {
           };
           return treeItem;
         }
+        // 默认情况（不应该到达这里）
         return new vscode.TreeItem(element.label || element.name, vscode.TreeItemCollapsibleState.None);
       },
       getChildren: async (element: any) => {
@@ -266,6 +290,49 @@ export async function activate(context: vscode.ExtensionContext) {
       await vscode.window.showTextDocument(doc);
     });
     context.subscriptions.push(openFileCommand);
+
+    // 注册删除书签命令
+    const deleteBookmarkCommand = vscode.commands.registerCommand('codeManager.deleteBookmark', async (bookmark: any) => {
+      if (bookmark) {
+        const confirmed = await vscode.window.showWarningMessage(
+          `确定要删除书签"${bookmark.text || bookmark.label}"吗？`,
+          { modal: true },
+          '删除',
+          '取消'
+        );
+        if (confirmed === '删除') {
+          // 移除书签装饰器
+          decorationService.removeDecoration(bookmark.id);
+
+          await bookmarkService.deleteBookmark(bookmark.id);
+          // 刷新 TreeView
+          bookmarkTreeDataProvider._onDidChangeTreeData.fire();
+          // 更新装饰器显示
+          updateDecorations();
+          vscode.window.showInformationMessage('书签已删除');
+        }
+      }
+    });
+    context.subscriptions.push(deleteBookmarkCommand);
+
+    // 注册删除集合命令
+    const deleteCollectionCommand = vscode.commands.registerCommand('codeManager.deleteCollection', async (collection: any) => {
+      if (collection) {
+        const confirmed = await vscode.window.showWarningMessage(
+          `确定要删除集合"${collection.name}"吗？`,
+          { modal: true },
+          '删除',
+          '取消'
+        );
+        if (confirmed === '删除') {
+          await collectionService.deleteCollection(collection.id);
+          // 刷新 TreeView
+          collectionTreeDataProvider._onDidChangeTreeData.fire();
+          vscode.window.showInformationMessage('集合已删除');
+        }
+      }
+    });
+    context.subscriptions.push(deleteCollectionCommand);
 
     // 注册 TreeView 以便稍后刷新
     context.subscriptions.push(bookmarkTreeView);

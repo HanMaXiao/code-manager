@@ -25,7 +25,7 @@
     }
 
     .dialog-container {
-      max-width: 450px;
+      max-width: 500px;
       margin: 0 auto;
     }
 
@@ -56,10 +56,23 @@
       font-weight: 500;
     }
 
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 15px 0 10px;
+      color: var(--vscode-foreground, #cccccc);
+    }
+
     .collection-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      background: var(--background);
     }
 
     .collection-item {
@@ -109,6 +122,27 @@
       color: var(--vscode-descriptionForeground, #999999);
     }
 
+    .collection-files {
+      margin-left: 48px;
+      padding: 10px 0;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #999999);
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .empty-collections {
+      text-align: center;
+      padding: 30px;
+      color: var(--vscode-descriptionForeground, #999999);
+      font-size: 13px;
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
     .file-preview {
       margin-top: 15px;
       padding: 12px;
@@ -125,28 +159,31 @@
       gap: 8px;
     }
 
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     .file-item {
       display: flex;
       align-items: center;
       gap: 8px;
       padding: 6px 0;
       font-size: 12px;
+      background: var(--background);
+      border-radius: 4px;
     }
 
     .file-icon {
       color: var(--vscode-descriptionForeground, #999999);
     }
 
-    .empty-collections {
+    .empty-state {
       text-align: center;
-      padding: 30px;
       color: var(--vscode-descriptionForeground, #999999);
-      font-size: 13px;
-    }
-
-    .empty-icon {
-      font-size: 40px;
-      margin-bottom: 10px;
+      font-size: 12px;
+      padding: 10px;
     }
 
     .button-group {
@@ -194,9 +231,10 @@
   <div class="dialog-container">
     <div class="dialog-header">
       <h2 class="dialog-title">添加到集合</h2>
-      <p class="dialog-subtitle">选择一个集合来添加选中的文件</p>
+      <p class="dialog-subtitle">选择一个集合来添加文件</p>
     </div>
 
+    <!-- 第一步：选择集合 -->
     <div class="form-group">
       <label class="form-label">选择集合</label>
       <div class="collection-list" id="collectionList">
@@ -204,12 +242,21 @@
       </div>
     </div>
 
+    <!-- 第二步：显示选中集合中的文件 -->
+    <div id="collectionFilesSection" style="display: none;">
+      <div class="section-title">选中集合中的文件</div>
+      <div class="collection-files" id="collectionFiles">
+        <!-- 文件列表将通过JavaScript动态生成 -->
+      </div>
+    </div>
+
+    <!-- 要添加的文件 -->
     <div class="file-preview">
       <div class="file-preview-title">
         <span>📄</span>
         <span>要添加的文件</span>
       </div>
-      <div id="fileList">
+      <div class="file-list" id="fileList">
         <div class="empty-state">暂无文件</div>
       </div>
     </div>
@@ -226,6 +273,7 @@
     let selectedCollectionId = null;
     let selectedFiles = [];
     let collections = [];
+    let collectionFilesMap: { [key: string]: string[] } = {};
 
     // 获取图标的符号表示
     function getIconSymbol(iconName) {
@@ -259,18 +307,21 @@
         return;
       }
 
-      container.innerHTML = collections.map(collection => `
-        <div class="collection-item ${collection.id === selectedCollectionId ? 'selected' : ''}"
-             data-collection-id="${collection.id}">
-          <div class="collection-icon" style="background-color: ${collection.color}20; color: ${collection.color};">
-            ${getIconSymbol(collection.icon)}
+      container.innerHTML = collections.map(collection => {
+        const fileCount = collectionFilesMap[collection.id] ? collectionFilesMap[collection.id].length : 0;
+        return `
+          <div class="collection-item ${collection.id === selectedCollectionId ? 'selected' : ''}"
+               data-collection-id="${collection.id}">
+            <div class="collection-icon" style="background-color: ${collection.color}20; color: ${collection.color};">
+              ${getIconSymbol(collection.icon)}
+            </div>
+            <div class="collection-info">
+              <div class="collection-name">${collection.name}</div>
+              <div class="collection-meta">${fileCount} 个文件</div>
+            </div>
           </div>
-          <div class="collection-info">
-            <div class="collection-name">${collection.name}</div>
-            <div class="collection-meta">ID: ${collection.id}</div>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
 
       // 添加点击事件
       container.querySelectorAll('.collection-item').forEach(item => {
@@ -282,7 +333,7 @@
     }
 
     // 选择集合
-    function selectCollection(collectionId) {
+    function selectCollection(collectionId: string) {
       selectedCollectionId = collectionId;
 
       // 更新UI
@@ -294,11 +345,37 @@
         }
       });
 
+      // 显示集合中的文件
+      updateCollectionFilesView(collectionId);
+
       // 启用/禁用添加按钮
       updateAddButton();
     }
 
-    // 更新文件列表显示
+    // 更新集合文件视图
+    function updateCollectionFilesView(collectionId: string) {
+      const section = document.getElementById('collectionFilesSection');
+      const filesContainer = document.getElementById('collectionFiles');
+      const files = collectionFilesMap[collectionId] || [];
+
+      if (files.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+
+      section.style.display = 'block';
+      filesContainer.innerHTML = files.map(file => {
+        const fileName = file.split('/').pop() || file.split('\\').pop() || file;
+        return `
+          <div class="file-item">
+            <span class="file-icon">📄</span>
+            <span>${fileName}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新要添加的文件列表显示
     function updateFileList() {
       const fileList = document.getElementById('fileList');
 
@@ -360,6 +437,11 @@
         case 'initialize':
           selectedFiles = message.files || [];
           collections = message.collections || [];
+          // 构建集合文件映射
+          collectionFilesMap = {};
+          collections.forEach((c: any) => {
+            collectionFilesMap[c.id] = c.fileIds || [];
+          });
           updateCollectionList();
           updateFileList();
           updateAddButton();

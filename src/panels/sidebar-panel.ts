@@ -203,10 +203,20 @@ export class SidebarPanel {
           case 'addToCollection':
             try {
               const collectionId = message.data.collectionId;
-              const files = message.data.files || [];
+              let files = message.data.files || [];
+
+              // 确保 files 是数组
+              if (!Array.isArray(files)) {
+                files = [];
+              }
 
               if (!collectionId) {
                 vscode.window.showErrorMessage('请选择一个集合');
+                return;
+              }
+
+              if (files.length === 0) {
+                vscode.window.showErrorMessage('没有要添加的文件');
                 return;
               }
 

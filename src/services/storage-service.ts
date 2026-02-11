@@ -20,11 +20,21 @@ export class StorageService {
    */
   public async getAllBookmarks(): Promise<Bookmark[]> {
     const bookmarks = this.context.globalState.get<Bookmark[]>(this.BOOKMARKS_KEY, []);
-    // 将日期字符串转换回Date对象
-    return bookmarks.map(bookmark => ({
-      ...bookmark,
-      createTime: new Date(bookmark.createTime)
-    }));
+    // 将日期字符串转换回Date对象，并迁移旧数据
+    return bookmarks.map((bookmark: any) => {
+      const migrated: any = {
+        ...bookmark,
+        createTime: new Date(bookmark.createTime)
+      };
+      // 迁移旧数据：为没有 startLine 和 endLine 的书签添加这些字段
+      if (migrated.startLine === undefined) {
+        migrated.startLine = bookmark.lineNumber;
+      }
+      if (migrated.endLine === undefined) {
+        migrated.endLine = bookmark.lineNumber;
+      }
+      return migrated;
+    });
   }
 
   /**
