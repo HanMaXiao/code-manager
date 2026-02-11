@@ -3,7 +3,7 @@
   "displayName": "代码管理者 - Code Manager",
   "description": "智能代码书签和集合管理插件，提升大型项目的代码导航和组织效率",
   "version": "1.0.0",
-  "publisher": "HanmaXiao",
+  "publisher": "HanMaXiao",
   "engines": {
     "vscode": "^1.74.0"
   },
