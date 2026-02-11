@@ -10,7 +10,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:bookmarkPanel",
+    "onView:collectionPanel"
   ],
   "main": "./dist/extension.js",
   "contributes": {
