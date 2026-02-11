@@ -285,6 +285,7 @@
           });
           colorOption.classList.add('selected');
           selectedColor = color;
+          updatePreview(); // 实时更新预览
         });
         
         container.appendChild(colorOption);
@@ -312,6 +313,7 @@
           });
           iconOption.classList.add('selected');
           selectedIcon = icon;
+          updatePreview(); // 实时更新预览
         });
         
         container.appendChild(iconOption);
@@ -333,6 +335,21 @@
         'collection': '📂'
       };
       return iconMap[iconName] || '📁';
+    }
+
+    // 更新预览显示
+    function updatePreview() {
+      const collectionName = document.getElementById('collectionName').value || '集合名称';
+      const previewTitle = document.querySelector('.file-preview-title');
+      const previewIcon = previewTitle.querySelector('span:first-child');
+      
+      // 更新图标
+      previewIcon.textContent = getIconSymbol(selectedIcon);
+      previewIcon.style.color = selectedColor;
+      
+      // 更新名称
+      const nameSpan = previewTitle.querySelector('span:last-child');
+      nameSpan.textContent = collectionName;
     }
 
     // 更新文件列表显示
@@ -380,6 +397,9 @@
       });
     });
 
+    // 添加输入框实时更新监听
+    document.getElementById('collectionName').addEventListener('input', updatePreview);
+
     // 监听来自扩展的消息
     window.addEventListener('message', event => {
       const message = event.data;
@@ -412,6 +432,7 @@
     initColorPicker();
     initIconGrid();
     updateFileList();
+    updatePreview(); // 初始化预览
 
     console.log('集合创建对话框已加载');
   </script>

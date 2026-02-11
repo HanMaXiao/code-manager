@@ -28,6 +28,13 @@ export class SidebarPanel {
    * 显示创建书签对话框
    */
   public showBookmarkDialog(): void {
+    // 预先获取当前编辑器信息
+    const editorInfo = this._navigationService.getCurrentEditorInfo();
+    if (!editorInfo) {
+      vscode.window.showErrorMessage('请先打开一个文件并在其中选择代码');
+      return;
+    }
+
     const panel = vscode.window.createWebviewPanel(
       'createBookmark',
       '创建书签',
@@ -49,12 +56,6 @@ export class SidebarPanel {
         switch (message.command) {
           case 'createBookmark':
             try {
-              const editorInfo = this._navigationService.getCurrentEditorInfo();
-              if (!editorInfo) {
-                vscode.window.showErrorMessage('请先打开一个文件');
-                return;
-              }
-              
               await this._bookmarkService.createBookmark({
                 filePath: editorInfo.filePath,
                 lineNumber: editorInfo.lineNumber,
@@ -146,6 +147,19 @@ export class SidebarPanel {
   }
 
   /**
+   * 刷新侧边栏数据
+   */
+  public async refreshData(): Promise<void> {
+    // 重新加载数据
+    await this._bookmarkService.refresh();
+    await this._collectionService.refresh();
+    
+    // 通知webview更新
+    // 这里可以通过postMessage通知webview更新显示
+    console.log('侧边栏数据已刷新');
+  }
+
+  /**
    * 获取书签视图提供商
    */
   public getBookmarkViewProvider(): vscode.WebviewViewProvider {
@@ -156,7 +170,18 @@ export class SidebarPanel {
           localResourceRoots: [this._extensionUri]
         };
 
-        webviewView.webview.html = this.getBookmarkPanelHtml();
+        // 加载初始数据并渲染面板
+        this.renderBookmarkPanel(webviewView.webview);
+        
+        // 监听数据变化
+        const refreshHandler = setInterval(async () => {
+          await this._bookmarkService.refresh();
+          this.renderBookmarkPanel(webviewView.webview);
+        }, 5000); // 每5秒检查一次更新
+        
+        webviewView.onDidDispose(() => {
+          clearInterval(refreshHandler);
+        });
       }
     };
   }
@@ -172,9 +197,219 @@ export class SidebarPanel {
           localResourceRoots: [this._extensionUri]
         };
 
-        webviewView.webview.html = this.getCollectionPanelHtml();
+        // 加载初始数据并渲染面板
+        this.renderCollectionPanel(webviewView.webview);
+        
+        // 监听数据变化
+        const refreshHandler = setInterval(async () => {
+          await this._collectionService.refresh();
+          this.renderCollectionPanel(webviewView.webview);
+        }, 5000); // 每5秒检查一次更新
+        
+        webviewView.onDidDispose(() => {
+          clearInterval(refreshHandler);
+        });
       }
     };
+  }
+
+  /**
+   * 渲染书签面板
+   */
+  private async renderBookmarkPanel(webview: vscode.Webview): Promise<void> {
+    const bookmarks = this._bookmarkService.getAllBookmarks();
+    
+    let content = '';
+    if (bookmarks.length === 0) {
+      content = `
+        <div class="empty-state">
+          <p>暂无书签</p>
+          <p>在代码编辑器中右键选择"添加书签"来创建书签</p>
+        </div>
+      `;
+    } else {
+      content = bookmarks.map(bookmark => `
+        <div class="bookmark-item" onclick="navigateToBookmark('${bookmark.id}')">
+          <div class="bookmark-text">${bookmark.text}</div>
+          <div class="bookmark-path">${bookmark.filePath}</div>
+        </div>
+      `).join('');
+    }
+
+    webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>书签管理</title>
+        <style>
+          body {
+            padding: 10px;
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-sideBar-background);
+          }
+          .panel-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
+          }
+          .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+          }
+          .empty-state {
+            text-align: center;
+            color: var(--vscode-descriptionForeground);
+            padding: 20px;
+          }
+          .bookmark-item {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            border-left: 3px solid ${bookmarks.length > 0 ? '#4ECDC4' : 'transparent'};
+          }
+          .bookmark-item:hover {
+            background-color: var(--vscode-list-hoverBackground);
+          }
+          .bookmark-text {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .bookmark-path {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-top: 2px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="panel-header">
+          <h3 class="panel-title">书签管理 (${bookmarks.length})</h3>
+        </div>
+        <div id="bookmarks-container">
+          ${content}
+        </div>
+        <script>
+          const vscode = acquireVsCodeApi();
+          
+          function navigateToBookmark(id) {
+            vscode.postMessage({
+              command: 'navigateToBookmark',
+              bookmarkId: id
+            });
+          }
+          
+          // 监听来自扩展的消息
+          window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'refresh') {
+              // 可以在这里处理刷新请求
+              location.reload();
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * 渲染集合面板
+   */
+  private async renderCollectionPanel(webview: vscode.Webview): Promise<void> {
+    const collections = this._collectionService.getAllCollections();
+    
+    let content = '';
+    if (collections.length === 0) {
+      content = `
+        <div class="empty-state">
+          <p>暂无集合</p>
+          <p>在文件资源管理器中右键选择"添加到集合"来创建集合</p>
+        </div>
+      `;
+    } else {
+      content = collections.map(collection => `
+        <div class="collection-item">
+          <div class="collection-name">${collection.name}</div>
+          <div class="collection-count">${collection.fileIds.length} 个文件</div>
+        </div>
+      `).join('');
+    }
+
+    webview.html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>集合管理</title>
+        <style>
+          body {
+            padding: 10px;
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-sideBar-background);
+          }
+          .panel-header {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
+          }
+          .panel-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+          }
+          .empty-state {
+            text-align: center;
+            color: var(--vscode-descriptionForeground);
+            padding: 20px;
+          }
+          .collection-item {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            border-left: 3px solid ${collections.length > 0 ? '#45B7D1' : 'transparent'};
+          }
+          .collection-item:hover {
+            background-color: var(--vscode-list-hoverBackground);
+          }
+          .collection-name {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .collection-count {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            margin-top: 2px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="panel-header">
+          <h3 class="panel-title">集合管理 (${collections.length})</h3>
+        </div>
+        <div id="collections-container">
+          ${content}
+        </div>
+        <script>
+          const vscode = acquireVsCodeApi();
+          console.log('集合面板已加载，共 ${collections.length} 个集合');
+        </script>
+      </body>
+      </html>
+    `;
   }
 
   /**

@@ -37,6 +37,10 @@
         {
           "command": "codeManager.addBookmark",
           "group": "navigation"
+        },
+        {
+          "command": "codeManager.addToCollection",
+          "group": "navigation"
         }
       ],
       "explorer/context": [
@@ -60,12 +64,12 @@
         {
           "id": "bookmarkPanel",
           "name": "书签管理",
-          "when": "view == bookmarkPanel"
+          "when": "true"
         },
         {
           "id": "collectionPanel", 
           "name": "集合管理",
-          "when": "view == collectionPanel"
+          "when": "true"
         }
       ]
     }
