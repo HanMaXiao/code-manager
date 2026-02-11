@@ -1,0 +1,90 @@
+{
+  "name": "code-manager",
+  "displayName": "代码管理者",
+  "description": "智能代码书签和集合管理插件",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeManager.toggleBookmarkPanel",
+        "title": "切换书签面板"
+      },
+      {
+        "command": "codeManager.toggleCollectionPanel", 
+        "title": "切换集合面板"
+      },
+      {
+        "command": "codeManager.addBookmark",
+        "title": "添加书签"
+      },
+      {
+        "command": "codeManager.addToCollection",
+        "title": "添加到集合"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeManager.addBookmark",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "codeManager.addToCollection",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeManager",
+          "title": "代码管理者",
+          "icon": "$(bookmark)"
+        }
+      ]
+    },
+    "views": {
+      "codeManager": [
+        {
+          "id": "bookmarkPanel",
+          "name": "书签管理",
+          "when": "view == bookmarkPanel"
+        },
+        {
+          "id": "collectionPanel", 
+          "name": "集合管理",
+          "when": "view == collectionPanel"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "test-compile": "tsc -p ./",
+    "test-watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "ts-loader": "^9.4.2"
+  }
+}

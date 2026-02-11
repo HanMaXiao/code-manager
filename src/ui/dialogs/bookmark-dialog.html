@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创建书签</title>
+  <style>
+    :root {
+      --background: var(--vscode-input-background, #3c3c3c);
+      --foreground: var(--vscode-input-foreground, #cccccc);
+      --border: var(--vscode-input-border, #3c3c3c);
+      --focus-border: var(--vscode-focusBorder, #007fd4);
+      --button-background: var(--vscode-button-background, #0e639c);
+      --button-hover: var(--vscode-button-hoverBackground, #1177bb);
+      --button-foreground: var(--vscode-button-foreground, #ffffff);
+    }
+
+    body {
+      font-family: var(--vscode-font-family, "Segoe WPC", "Segoe UI", sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--foreground);
+      background-color: var(--vscode-editor-background, #1e1e1e);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .dialog-container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .dialog-header {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .dialog-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 5px 0;
+    }
+
+    .dialog-subtitle {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground, #999999);
+      margin: 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 8px 12px;
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--foreground);
+      font-family: inherit;
+      font-size: inherit;
+      box-sizing: border-box;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--focus-border);
+    }
+
+    .color-picker-container {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+
+    .color-option {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+
+    .color-option.selected {
+      border-color: var(--focus-border);
+      box-shadow: 0 0 0 2px rgba(0, 127, 212, 0.3);
+    }
+
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 5px;
+    }
+
+    .icon-option {
+      padding: 10px;
+      text-align: center;
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+    }
+
+    .icon-option:hover {
+      background: var(--vscode-list-hoverBackground, #2a2d2e);
+    }
+
+    .icon-option.selected {
+      background: var(--vscode-list-activeSelectionBackground, #094771);
+      border-color: var(--focus-border);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 2px;
+      font-family: inherit;
+      font-size: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--button-background);
+      color: var(--button-foreground);
+    }
+
+    .btn-primary:hover {
+      background: var(--button-hover);
+    }
+
+    .btn-secondary {
+      background: var(--vscode-button-secondaryBackground, #3a3d41);
+      color: var(--vscode-button-secondaryForeground, #ffffff);
+    }
+
+    .btn-secondary:hover {
+      background: var(--vscode-button-secondaryHoverBackground, #45494e);
+    }
+
+    .preview {
+      margin-top: 15px;
+      padding: 12px;
+      background: var(--vscode-sideBar-background, #252526);
+      border-radius: 4px;
+      border-left: 3px solid var(--selected-color, #4ECDC4);
+    }
+
+    .preview-title {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+
+    .preview-content {
+      font-size: 12px;
+      color: var(--vscode-descriptionForeground, #999999);
+    }
+  </style>
+</head>
+<body>
+  <div class="dialog-container">
+    <div class="dialog-header">
+      <h2 class="dialog-title">创建书签</h2>
+      <p class="dialog-subtitle">为当前代码位置添加书签</p>
+    </div>
+
+    <form id="bookmarkForm">
+      <div class="form-group">
+        <label class="form-label" for="bookmarkText">书签文本</label>
+        <input 
+          type="text" 
+          id="bookmarkText" 
+          class="input-field" 
+          placeholder="例如：重要函数实现"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">选择颜色</label>
+        <div class="color-picker-container" id="colorPicker">
+          <!-- 颜色选项将通过JavaScript动态生成 -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">选择图标</label>
+        <div class="icon-grid" id="iconGrid">
+          <!-- 图标选项将通过JavaScript动态生成 -->
+        </div>
+      </div>
+
+      <div class="preview">
+        <div class="preview-title">预览效果</div>
+        <div class="preview-content" id="previewContent">
+          选择颜色和图标来预览书签样式
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
+        <button type="submit" class="btn btn-primary" id="createBtn">创建书签</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+    
+    // 预设颜色和图标数据
+    const presetColors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+    ];
+    
+    const presetIcons = [
+      'bookmark', 'star', 'heart', 'tag', 'flag',
+      'pin', 'bell', 'lightbulb', 'target', 'rocket'
+    ];
+    
+    let selectedColor = presetColors[0];
+    let selectedIcon = presetIcons[0];
+
+    // 初始化颜色选择器
+    function initColorPicker() {
+      const container = document.getElementById('colorPicker');
+      container.innerHTML = '';
+      
+      presetColors.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.className = 'color-option';
+        colorOption.style.backgroundColor = color;
+        colorOption.dataset.color = color;
+        
+        if (color === selectedColor) {
+          colorOption.classList.add('selected');
+        }
+        
+        colorOption.addEventListener('click', () => {
+          document.querySelectorAll('.color-option').forEach(opt => {
+            opt.classList.remove('selected');
+          });
+          colorOption.classList.add('selected');
+          selectedColor = color;
+          updatePreview();
+        });
+        
+        container.appendChild(colorOption);
+      });
+    }
+
+    // 初始化图标网格
+    function initIconGrid() {
+      const container = document.getElementById('iconGrid');
+      container.innerHTML = '';
+      
+      presetIcons.forEach(icon => {
+        const iconOption = document.createElement('div');
+        iconOption.className = 'icon-option';
+        iconOption.textContent = getIconSymbol(icon);
+        iconOption.dataset.icon = icon;
+        
+        if (icon === selectedIcon) {
+          iconOption.classList.add('selected');
+        }
+        
+        iconOption.addEventListener('click', () => {
+          document.querySelectorAll('.icon-option').forEach(opt => {
+            opt.classList.remove('selected');
+          });
+          iconOption.classList.add('selected');
+          selectedIcon = icon;
+          updatePreview();
+        });
+        
+        container.appendChild(iconOption);
+      });
+    }
+
+    // 获取图标的VS Code符号表示
+    function getIconSymbol(iconName) {
+      const iconMap = {
+        'bookmark': '🔖',
+        'star': '⭐',
+        'heart': '❤️',
+        'tag': '🏷️',
+        'flag': '🚩',
+        'pin': '📌',
+        'bell': '🔔',
+        'lightbulb': '💡',
+        'target': '🎯',
+        'rocket': '🚀'
+      };
+      return iconMap[iconName] || '🔖';
+    }
+
+    // 更新预览
+    function updatePreview() {
+      const text = document.getElementById('bookmarkText').value || '书签文本';
+      const preview = document.getElementById('previewContent');
+      const previewContainer = document.querySelector('.preview');
+      
+      preview.innerHTML = `
+        <span style="color: ${selectedColor}; font-size: 16px;">${getIconSymbol(selectedIcon)}</span>
+        <span style="margin-left: 8px;">${text}</span>
+      `;
+      
+      previewContainer.style.borderLeftColor = selectedColor;
+      document.documentElement.style.setProperty('--selected-color', selectedColor);
+    }
+
+    // 表单提交处理
+    document.getElementById('bookmarkForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const text = document.getElementById('bookmarkText').value.trim();
+      if (!text) {
+        alert('请输入书签文本');
+        return;
+      }
+      
+      vscode.postMessage({
+        command: 'createBookmark',
+        data: {
+          text: text,
+          color: selectedColor,
+          icon: selectedIcon
+        }
+      });
+    });
+
+    // 取消按钮处理
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      vscode.postMessage({
+        command: 'cancel'
+      });
+    });
+
+    // 输入文本时更新预览
+    document.getElementById('bookmarkText').addEventListener('input', updatePreview);
+
+    // 初始化
+    initColorPicker();
+    initIconGrid();
+    updatePreview();
+
+    // 监听来自扩展的消息
+    window.addEventListener('message', event => {
+      const message = event.data;
+      
+      switch (message.command) {
+        case 'initialize':
+          // 可以在这里接收初始数据
+          break;
+      }
+    });
+
+    console.log('书签创建对话框已加载');
+  </script>
+</body>
+</html>
