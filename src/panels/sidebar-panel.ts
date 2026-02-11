@@ -170,6 +170,7 @@ export class SidebarPanel {
   public getBookmarkViewProvider(): vscode.WebviewViewProvider {
     return {
       resolveWebviewView: (webviewView: vscode.WebviewView) => {
+        console.log('[书签面板] 视图提供商被解析');
         webviewView.webview.options = {
           enableScripts: true,
           localResourceRoots: [this._extensionUri]
@@ -178,12 +179,15 @@ export class SidebarPanel {
         this._bookmarkWebview = webviewView.webview;
 
         const render = async () => {
+          console.log('[书签面板] 开始渲染');
           await this.renderBookmarkPanel(webviewView.webview);
+          console.log('[书签面板] 渲染完成');
         };
 
         render();
         
         webviewView.onDidChangeVisibility(async () => {
+          console.log(`[书签面板] 可见性变化: ${webviewView.visible}`);
           if (webviewView.visible) {
             await render();
           }
@@ -196,6 +200,7 @@ export class SidebarPanel {
         webviewView.onDidDispose(() => {
           clearInterval(refreshHandler);
           this._bookmarkWebview = undefined;
+          console.log('[书签面板] 视图已销毁');
         });
       }
     };
@@ -207,6 +212,7 @@ export class SidebarPanel {
   public getCollectionViewProvider(): vscode.WebviewViewProvider {
     return {
       resolveWebviewView: (webviewView: vscode.WebviewView) => {
+        console.log('[集合面板] 视图提供商被解析');
         webviewView.webview.options = {
           enableScripts: true,
           localResourceRoots: [this._extensionUri]
@@ -215,12 +221,15 @@ export class SidebarPanel {
         this._collectionWebview = webviewView.webview;
 
         const render = async () => {
+          console.log('[集合面板] 开始渲染');
           await this.renderCollectionPanel(webviewView.webview);
+          console.log('[集合面板] 渲染完成');
         };
 
         render();
         
         webviewView.onDidChangeVisibility(async () => {
+          console.log(`[集合面板] 可见性变化: ${webviewView.visible}`);
           if (webviewView.visible) {
             await render();
           }
@@ -233,6 +242,7 @@ export class SidebarPanel {
         webviewView.onDidDispose(() => {
           clearInterval(refreshHandler);
           this._collectionWebview = undefined;
+          console.log('[集合面板] 视图已销毁');
         });
       }
     };
@@ -263,7 +273,7 @@ export class SidebarPanel {
       `).join('');
     }
 
-    webview.html = `
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -333,18 +343,22 @@ export class SidebarPanel {
             });
           }
           
-          // 监听来自扩展的消息
           window.addEventListener('message', event => {
             const message = event.data;
             if (message.command === 'refresh') {
-              // 可以在这里处理刷新请求
               location.reload();
             }
           });
+          
+          console.log('[书签面板] 页面已加载');
         </script>
       </body>
       </html>
     `;
+    
+    console.log(`[书签面板] 设置HTML，长度: ${html.length}`);
+    webview.html = html;
+    console.log(`[书签面板] HTML已设置`);
   }
 
   /**
@@ -372,7 +386,7 @@ export class SidebarPanel {
       `).join('');
     }
 
-    webview.html = `
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -434,11 +448,15 @@ export class SidebarPanel {
         </div>
         <script>
           const vscode = acquireVsCodeApi();
-          console.log('集合面板已加载，共 ${collections.length} 个集合');
+          console.log('[集合面板] 页面已加载');
         </script>
       </body>
       </html>
     `;
+    
+    console.log(`[集合面板] 设置HTML，长度: ${html.length}`);
+    webview.html = html;
+    console.log(`[集合面板] HTML已设置`);
   }
 
   /**
