@@ -31,7 +31,11 @@ export class StorageService {
    * 保存书签列表
    */
   public async saveBookmarks(bookmarks: Bookmark[]): Promise<void> {
-    await this.context.globalState.update(this.BOOKMARKS_KEY, bookmarks);
+    const serializedBookmarks = bookmarks.map(bookmark => ({
+      ...bookmark,
+      createTime: bookmark.createTime.toISOString()
+    }));
+    await this.context.globalState.update(this.BOOKMARKS_KEY, serializedBookmarks);
   }
 
   /**
@@ -50,7 +54,11 @@ export class StorageService {
    * 保存集合列表
    */
   public async saveCollections(collections: Collection[]): Promise<void> {
-    await this.context.globalState.update(this.COLLECTIONS_KEY, collections);
+    const serializedCollections = collections.map(collection => ({
+      ...collection,
+      createTime: collection.createTime.toISOString()
+    }));
+    await this.context.globalState.update(this.COLLECTIONS_KEY, serializedCollections);
   }
 
   /**

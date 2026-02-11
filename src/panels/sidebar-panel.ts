@@ -69,7 +69,6 @@ export class SidebarPanel {
               panel.dispose();
               vscode.window.showInformationMessage('书签创建成功！');
               
-              await this.refreshData();
               if (this._bookmarkWebview) {
                 await this.renderBookmarkPanel(this._bookmarkWebview);
               }
@@ -127,7 +126,6 @@ export class SidebarPanel {
               panel.dispose();
               vscode.window.showInformationMessage('集合创建成功！');
               
-              await this.refreshData();
               if (this._collectionWebview) {
                 await this.renderCollectionPanel(this._collectionWebview);
               }
@@ -162,13 +160,8 @@ export class SidebarPanel {
    * 刷新侧边栏数据
    */
   public async refreshData(): Promise<void> {
-    // 重新加载数据
     await this._bookmarkService.refresh();
     await this._collectionService.refresh();
-    
-    // 通知webview更新
-    // 这里可以通过postMessage通知webview更新显示
-    console.log('侧边栏数据已刷新');
   }
 
   /**
@@ -184,10 +177,19 @@ export class SidebarPanel {
 
         this._bookmarkWebview = webviewView.webview;
 
-        this.renderBookmarkPanel(webviewView.webview);
+        const render = async () => {
+          await this.renderBookmarkPanel(webviewView.webview);
+        };
+
+        render();
+        
+        webviewView.onDidChangeVisibility(async () => {
+          if (webviewView.visible) {
+            await render();
+          }
+        });
         
         const refreshHandler = setInterval(async () => {
-          await this._bookmarkService.refresh();
           this.renderBookmarkPanel(webviewView.webview);
         }, 5000);
         
@@ -212,10 +214,19 @@ export class SidebarPanel {
 
         this._collectionWebview = webviewView.webview;
 
-        this.renderCollectionPanel(webviewView.webview);
+        const render = async () => {
+          await this.renderCollectionPanel(webviewView.webview);
+        };
+
+        render();
+        
+        webviewView.onDidChangeVisibility(async () => {
+          if (webviewView.visible) {
+            await render();
+          }
+        });
         
         const refreshHandler = setInterval(async () => {
-          await this._collectionService.refresh();
           this.renderCollectionPanel(webviewView.webview);
         }, 5000);
         
@@ -231,7 +242,9 @@ export class SidebarPanel {
    * 渲染书签面板
    */
   private async renderBookmarkPanel(webview: vscode.Webview): Promise<void> {
+    await this._bookmarkService.refresh();
     const bookmarks = this._bookmarkService.getAllBookmarks();
+    console.log(`[书签面板] 渲染中，共 ${bookmarks.length} 个书签`);
     
     let content = '';
     if (bookmarks.length === 0) {
@@ -338,7 +351,9 @@ export class SidebarPanel {
    * 渲染集合面板
    */
   private async renderCollectionPanel(webview: vscode.Webview): Promise<void> {
+    await this._collectionService.refresh();
     const collections = this._collectionService.getAllCollections();
+    console.log(`[集合面板] 渲染中，共 ${collections.length} 个集合`);
     
     let content = '';
     if (collections.length === 0) {

@@ -23,6 +23,10 @@ export async function activate(context: vscode.ExtensionContext) {
       navigationService
     );
 
+    // 初始化数据
+    await bookmarkService.initialize();
+    await collectionService.initialize();
+
     // 注册命令
     const disposables = [
       vscode.commands.registerCommand('codeManager.addBookmark', async () => {
@@ -54,10 +58,6 @@ export async function activate(context: vscode.ExtensionContext) {
     ];
 
     context.subscriptions.push(...disposables);
-
-    // 初始化数据
-    await bookmarkService.initialize();
-    await collectionService.initialize();
 
     console.log('代码管理者插件初始化完成');
   } catch (error) {
