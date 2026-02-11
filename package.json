@@ -48,33 +48,35 @@
       {
         "command": "codeManager.deleteCollection",
         "title": "删除集合"
+      },
+      {
+        "command": "codeManager.deleteFileFromCollection",
+        "title": "从集合中移除"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "submenu": "codeManager.collectionSubmenu",
+          "command": "codeManager.addBookmark",
+          "group": "navigation"
+        },
+        {
+          "command": "codeManager.createCollection",
+          "group": "navigation"
+        },
+        {
+          "command": "codeManager.addToCollection",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "submenu": "codeManager.collectionSubmenu",
-          "group": "navigation"
-        }
-      ],
-      "codeManager.collectionSubmenu": [
-        {
-          "command": "codeManager.addBookmark",
-          "group": "1_bookmark@1"
-        },
-        {
           "command": "codeManager.createCollection",
-          "group": "2_create@1"
+          "group": "navigation"
         },
         {
           "command": "codeManager.addToCollection",
-          "group": "3_add@1"
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -85,17 +87,16 @@
         },
         {
           "command": "codeManager.deleteCollection",
-          "when": "view == collectionPanel",
+          "when": "view == collectionPanel && viewItem == collection",
+          "group": "inline"
+        },
+        {
+          "command": "codeManager.deleteFileFromCollection",
+          "when": "view == collectionPanel && viewItem == file",
           "group": "inline"
         }
       ]
     },
-    "submenus": [
-      {
-        "id": "codeManager.collectionSubmenu",
-        "label": "代码管理者"
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {

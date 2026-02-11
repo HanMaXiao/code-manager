@@ -16,6 +16,7 @@ export class SidebarPanel {
   public bookmarkTreeDataProvider: any;
   public collectionTreeDataProvider: any;
   private updateDecorationsCallback?: () => void;
+  private addToCollectionPanel?: vscode.WebviewPanel;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -110,6 +111,8 @@ export class SidebarPanel {
    * 显示创建集合对话框
    */
   public showCreateCollectionDialog(selectedFiles?: string[]): void {
+    console.log('showCreateCollectionDialog 被调用，selectedFiles:', selectedFiles);
+    
     const panel = vscode.window.createWebviewPanel(
       'createCollection',
       '创建集合',
@@ -126,11 +129,15 @@ export class SidebarPanel {
     vscode.workspace.fs.readFile(dialogPath).then(content => {
       panel.webview.html = content.toString();
 
-      // 发送初始数据到webview
-      panel.webview.postMessage({
-        command: 'initialize',
-        files: selectedFiles || []
-      });
+      // 延迟发送消息，确保webview已完全加载
+      setTimeout(() => {
+        const message = {
+          command: 'initialize',
+          files: selectedFiles || []
+        };
+        console.log('发送初始化消息到创建集合对话框:', message);
+        panel.webview.postMessage(message);
+      }, 100);
 
       // 处理来自webview的消息
       panel.webview.onDidReceiveMessage(async (message) => {
@@ -149,6 +156,9 @@ export class SidebarPanel {
 
               // 刷新集合面板
               await this.refreshCollectionPanel();
+
+              // 更新添加到集合对话框
+              this.updateAddToCollectionDialog();
             } catch (error) {
               vscode.window.showErrorMessage(`创建集合失败: ${error}`);
             }
@@ -166,6 +176,13 @@ export class SidebarPanel {
    * 显示添加到集合对话框
    */
   public showAddToCollectionDialog(selectedFiles?: string[]): void {
+    console.log('showAddToCollectionDialog 被调用，selectedFiles:', selectedFiles);
+    
+    // 如果对话框已打开，先关闭
+    if (this.addToCollectionPanel) {
+      this.addToCollectionPanel.dispose();
+    }
+
     const panel = vscode.window.createWebviewPanel(
       'addToCollection',
       '添加到集合',
@@ -176,6 +193,8 @@ export class SidebarPanel {
       }
     );
 
+    this.addToCollectionPanel = panel;
+
     // 获取对话框HTML内容
     const dialogPath = vscode.Uri.joinPath(this._extensionUri, 'src', 'ui', 'dialogs', 'add-to-collection-dialog.html');
 
@@ -185,17 +204,24 @@ export class SidebarPanel {
       // 获取所有集合
       const collections = this._collectionService.getAllCollections();
 
-      // 发送初始数据到webview
-      panel.webview.postMessage({
-        command: 'initialize',
-        files: selectedFiles || [],
-        collections: collections.map(c => ({
-          id: c.id,
-          name: c.name,
-          color: c.color,
-          icon: c.icon
-        }))
-      });
+      console.log('准备发送初始化消息，集合数量:', collections.length);
+
+      // 延迟发送消息，确保webview已完全加载
+      setTimeout(() => {
+        const message = {
+          command: 'initialize',
+          files: selectedFiles || [],
+          collections: collections.map(c => ({
+            id: c.id,
+            name: c.name,
+            color: c.color,
+            icon: c.icon,
+            fileIds: c.fileIds || []
+          }))
+        };
+        console.log('发送初始化消息到添加到集合对话框:', message);
+        panel.webview.postMessage(message);
+      }, 100);
 
       // 处理来自webview的消息
       panel.webview.onDidReceiveMessage(async (message) => {
@@ -221,18 +247,29 @@ export class SidebarPanel {
               }
 
               // 添加文件到集合
+              let successCount = 0;
               for (const file of files) {
-                await this._collectionService.addFileToCollection({
+                const result = await this._collectionService.addFileToCollection({
                   collectionId: collectionId,
                   filePath: file
                 });
+                if (result) {
+                  successCount++;
+                }
               }
 
               panel.dispose();
-              vscode.window.showInformationMessage(`已将 ${files.length} 个文件添加到集合！`);
+
+              // 只在有文件成功添加时显示提示
+              if (successCount > 0) {
+                vscode.window.showInformationMessage(`已将 ${successCount} 个文件添加到集合！`);
+              }
 
               // 刷新集合面板
               await this.refreshCollectionPanel();
+
+              // 更新添加到集合对话框
+              this.updateAddToCollectionDialog();
             } catch (error) {
               vscode.window.showErrorMessage(`添加到集合失败: ${error}`);
             }
@@ -243,7 +280,31 @@ export class SidebarPanel {
             break;
         }
       });
+
+      // 监听面板关闭事件
+      panel.onDidDispose(() => {
+        this.addToCollectionPanel = undefined;
+      });
     });
+  }
+
+  /**
+   * 更新添加到集合对话框的集合列表
+   */
+  public updateAddToCollectionDialog(): void {
+    if (this.addToCollectionPanel) {
+      const collections = this._collectionService.getAllCollections();
+      this.addToCollectionPanel.webview.postMessage({
+        command: 'updateCollections',
+        collections: collections.map(c => ({
+          id: c.id,
+          name: c.name,
+          color: c.color,
+          icon: c.icon,
+          fileIds: c.fileIds || []
+        }))
+      });
+    }
   }
 
   /**

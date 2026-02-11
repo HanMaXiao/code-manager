@@ -86,3 +86,4 @@ temp/
 # Compiled binary addons
 *.node
 doc/fix-bug.md
+doc/dev-plan.md

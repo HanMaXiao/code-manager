@@ -92,18 +92,41 @@ export async function activate(context: vscode.ExtensionContext) {
         sidebarPanel.toggleBookmarkPanel();
       }),
 
-      vscode.commands.registerCommand('codeManager.createCollection', async (selectedFiles?: string[]) => {
+      vscode.commands.registerCommand('codeManager.createCollection', async (uris?: vscode.Uri | vscode.Uri[]) => {
+        console.log('createCollection 命令被调用，传入参数:', uris);
+        
         // 如果没有传入文件，尝试从资源管理器获取选中的文件
-        if (!selectedFiles) {
+        let selectedFiles: string[] = [];
+
+        if (uris) {
+          // 处理单个 URI 或 URI 数组
+          const uriArray = Array.isArray(uris) ? uris : [uris];
+          selectedFiles = uriArray.map(uri => uri.fsPath);
+          console.log('从 URI 获取的文件:', selectedFiles);
+        } else {
+          // 尝试从编辑器上下文获取
           selectedFiles = getSelectedFilesFromExplorer();
+          console.log('从编辑器获取的文件:', selectedFiles);
         }
+
         await sidebarPanel.showCreateCollectionDialog(selectedFiles);
       }),
 
-      vscode.commands.registerCommand('codeManager.addToCollection', async (selectedFiles?: string[]) => {
+      vscode.commands.registerCommand('codeManager.addToCollection', async (uris?: vscode.Uri | vscode.Uri[]) => {
+        console.log('addToCollection 命令被调用，传入参数:', uris);
+        
         // 如果没有传入文件，尝试从资源管理器获取选中的文件
-        if (!selectedFiles) {
+        let selectedFiles: string[] = [];
+
+        if (uris) {
+          // 处理单个 URI 或 URI 数组
+          const uriArray = Array.isArray(uris) ? uris : [uris];
+          selectedFiles = uriArray.map(uri => uri.fsPath);
+          console.log('从 URI 获取的文件:', selectedFiles);
+        } else {
+          // 尝试从编辑器上下文获取
           selectedFiles = getSelectedFilesFromExplorer();
+          console.log('从编辑器获取的文件:', selectedFiles);
         }
 
         // 如果没有获取到文件，提示用户
@@ -201,12 +224,13 @@ export async function activate(context: vscode.ExtensionContext) {
           const treeItem = new vscode.TreeItem(element.name, vscode.TreeItemCollapsibleState.Collapsed);
           treeItem.tooltip = `${element.name} (${element.fileIds.length} 个文件)`;
           treeItem.iconPath = new vscode.ThemeIcon('folder');
+          treeItem.contextValue = 'collection';
           return treeItem;
         } else if (element.isFile) {
           const treeItem = new vscode.TreeItem(element.label, vscode.TreeItemCollapsibleState.None);
           treeItem.tooltip = element.filePath;
           treeItem.iconPath = new vscode.ThemeIcon('file');
-          treeItem.contextValue = element.filePath;
+          treeItem.contextValue = 'file';
           treeItem.command = {
             command: 'codeManager.openFile',
             title: '打开文件',
@@ -328,11 +352,41 @@ export async function activate(context: vscode.ExtensionContext) {
           await collectionService.deleteCollection(collection.id);
           // 刷新 TreeView
           collectionTreeDataProvider._onDidChangeTreeData.fire();
+          // 更新添加到集合对话框
+          sidebarPanel.updateAddToCollectionDialog();
           vscode.window.showInformationMessage('集合已删除');
         }
       }
     });
     context.subscriptions.push(deleteCollectionCommand);
+
+    // 注册从集合中移除文件命令
+    const deleteFileFromCollectionCommand = vscode.commands.registerCommand('codeManager.deleteFileFromCollection', async (fileItem: any) => {
+      if (fileItem && fileItem.isFile) {
+        const confirmed = await vscode.window.showWarningMessage(
+          `确定要从集合中移除文件"${fileItem.label}"吗？`,
+          { modal: true },
+          '移除',
+          '取消'
+        );
+        if (confirmed === '移除') {
+          // 找到包含该文件的集合
+          const collections = collectionService.getAllCollections();
+          for (const collection of collections) {
+            if (collection.fileIds.includes(fileItem.filePath)) {
+              await collectionService.removeFileFromCollection(collection.id, fileItem.filePath);
+              // 刷新 TreeView
+              collectionTreeDataProvider._onDidChangeTreeData.fire();
+              // 更新添加到集合对话框
+              sidebarPanel.updateAddToCollectionDialog();
+              vscode.window.showInformationMessage('文件已从集合中移除');
+              break;
+            }
+          }
+        }
+      }
+    });
+    context.subscriptions.push(deleteFileFromCollectionCommand);
 
     // 注册 TreeView 以便稍后刷新
     context.subscriptions.push(bookmarkTreeView);

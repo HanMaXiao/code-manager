@@ -56,13 +56,6 @@
       font-weight: 500;
     }
 
-    .section-title {
-      font-size: 14px;
-      font-weight: 500;
-      margin: 15px 0 10px;
-      color: var(--vscode-foreground, #cccccc);
-    }
-
     .collection-list {
       display: flex;
       flex-direction: column;
@@ -122,15 +115,6 @@
       color: var(--vscode-descriptionForeground, #999999);
     }
 
-    .collection-files {
-      margin-left: 48px;
-      padding: 10px 0;
-      font-size: 11px;
-      color: var(--vscode-descriptionForeground, #999999);
-      border-top: 1px solid var(--border);
-      margin-top: 8px;
-    }
-
     .empty-collections {
       text-align: center;
       padding: 30px;
@@ -141,6 +125,22 @@
     .empty-icon {
       font-size: 40px;
       margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 15px 0 10px;
+      color: var(--vscode-foreground, #cccccc);
+    }
+
+    .collection-files {
+      margin-left: 48px;
+      padding: 10px 0;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #999999);
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
     }
 
     .file-preview {
@@ -234,7 +234,6 @@
       <p class="dialog-subtitle">选择一个集合来添加文件</p>
     </div>
 
-    <!-- 第一步：选择集合 -->
     <div class="form-group">
       <label class="form-label">选择集合</label>
       <div class="collection-list" id="collectionList">
@@ -242,15 +241,14 @@
       </div>
     </div>
 
-    <!-- 第二步：显示选中集合中的文件 -->
+    <!-- 集合中的文件 -->
     <div id="collectionFilesSection" style="display: none;">
-      <div class="section-title">选中集合中的文件</div>
+      <div class="section-title">集合中的文件</div>
       <div class="collection-files" id="collectionFiles">
         <!-- 文件列表将通过JavaScript动态生成 -->
       </div>
     </div>
 
-    <!-- 要添加的文件 -->
     <div class="file-preview">
       <div class="file-preview-title">
         <span>📄</span>
@@ -273,7 +271,6 @@
     let selectedCollectionId = null;
     let selectedFiles = [];
     let collections = [];
-    let collectionFilesMap: { [key: string]: string[] } = {};
 
     // 获取图标的符号表示
     function getIconSymbol(iconName) {
@@ -294,6 +291,7 @@
 
     // 更新集合列表显示
     function updateCollectionList() {
+      console.log('updateCollectionList 被调用，collections:', collections);
       const container = document.getElementById('collectionList');
 
       if (collections.length === 0) {
@@ -308,7 +306,6 @@
       }
 
       container.innerHTML = collections.map(collection => {
-        const fileCount = collectionFilesMap[collection.id] ? collectionFilesMap[collection.id].length : 0;
         return `
           <div class="collection-item ${collection.id === selectedCollectionId ? 'selected' : ''}"
                data-collection-id="${collection.id}">
@@ -317,15 +314,17 @@
             </div>
             <div class="collection-info">
               <div class="collection-name">${collection.name}</div>
-              <div class="collection-meta">${fileCount} 个文件</div>
             </div>
           </div>
         `;
       }).join('');
 
       // 添加点击事件
-      container.querySelectorAll('.collection-item').forEach(item => {
-        item.addEventListener('click', () => {
+      const items = container.querySelectorAll('.collection-item');
+      console.log('找到的集合项数量:', items.length);
+      items.forEach(item => {
+        item.addEventListener('click', (e) => {
+          console.log('集合项被点击，dataset:', item.dataset);
           const collectionId = item.dataset.collectionId;
           selectCollection(collectionId);
         });
@@ -333,7 +332,8 @@
     }
 
     // 选择集合
-    function selectCollection(collectionId: string) {
+    function selectCollection(collectionId) {
+      console.log('selectCollection 被调用，collectionId:', collectionId);
       selectedCollectionId = collectionId;
 
       // 更新UI
@@ -353,16 +353,18 @@
     }
 
     // 更新集合文件视图
-    function updateCollectionFilesView(collectionId: string) {
+    function updateCollectionFilesView(collectionId) {
       const section = document.getElementById('collectionFilesSection');
       const filesContainer = document.getElementById('collectionFiles');
-      const files = collectionFilesMap[collectionId] || [];
 
-      if (files.length === 0) {
+      // 查找选中的集合
+      const selectedCollection = collections.find(c => c.id === collectionId);
+      if (!selectedCollection || !selectedCollection.fileIds || selectedCollection.fileIds.length === 0) {
         section.style.display = 'none';
         return;
       }
 
+      const files = selectedCollection.fileIds || [];
       section.style.display = 'block';
       filesContainer.innerHTML = files.map(file => {
         const fileName = file.split('/').pop() || file.split('\\').pop() || file;
@@ -379,7 +381,7 @@
     function updateFileList() {
       const fileList = document.getElementById('fileList');
 
-      if (selectedFiles.length === 0) {
+      if (!selectedFiles || selectedFiles.length === 0) {
         fileList.innerHTML = '<div class="empty-state">暂无文件</div>';
         return;
       }
@@ -398,11 +400,14 @@
     // 更新添加按钮状态
     function updateAddButton() {
       const addBtn = document.getElementById('addBtn');
-      addBtn.disabled = !selectedCollectionId || selectedFiles.length === 0;
+      const disabled = !selectedCollectionId || selectedFiles.length === 0;
+      addBtn.disabled = disabled;
+      console.log('updateAddButton - selectedCollectionId:', selectedCollectionId, 'selectedFiles.length:', selectedFiles.length, 'disabled:', disabled);
     }
 
     // 添加按钮点击处理
     document.getElementById('addBtn').addEventListener('click', () => {
+      console.log('添加按钮被点击，selectedCollectionId:', selectedCollectionId, 'selectedFiles:', selectedFiles);
       if (!selectedCollectionId) {
         alert('请选择一个集合');
         return;
@@ -435,15 +440,25 @@
 
       switch (message.command) {
         case 'initialize':
+          console.log('收到初始化消息:', message);
           selectedFiles = message.files || [];
           collections = message.collections || [];
-          // 构建集合文件映射
-          collectionFilesMap = {};
-          collections.forEach((c: any) => {
-            collectionFilesMap[c.id] = c.fileIds || [];
-          });
+          console.log('集合数量:', collections.length);
           updateCollectionList();
           updateFileList();
+          updateAddButton();
+          break;
+
+        case 'updateCollections':
+          console.log('收到更新集合消息:', message);
+          collections = message.collections || [];
+          console.log('更新后集合数量:', collections.length);
+          // 如果当前选中的集合被删除了，清除选择
+          const selectedExists = collections.find(c => c.id === selectedCollectionId);
+          if (!selectedExists) {
+            selectedCollectionId = null;
+          }
+          updateCollectionList();
           updateAddButton();
           break;
       }
