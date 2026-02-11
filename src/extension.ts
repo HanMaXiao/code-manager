@@ -25,22 +25,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // 注册命令
     const disposables = [
-      // 书签相关命令
       vscode.commands.registerCommand('codeManager.addBookmark', async () => {
         await sidebarPanel.showBookmarkDialog();
-        // 刷新侧边栏数据
-        await sidebarPanel.refreshData();
       }),
 
       vscode.commands.registerCommand('codeManager.toggleBookmarkPanel', () => {
         sidebarPanel.toggleBookmarkPanel();
       }),
 
-      // 集合相关命令
       vscode.commands.registerCommand('codeManager.addToCollection', async () => {
         await sidebarPanel.showCollectionDialog();
-        // 刷新侧边栏数据
-        await sidebarPanel.refreshData();
       }),
 
       vscode.commands.registerCommand('codeManager.toggleCollectionPanel', () => {

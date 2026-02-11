@@ -11,6 +11,8 @@ export class SidebarPanel {
   private readonly _bookmarkService: BookmarkService;
   private readonly _collectionService: CollectionService;
   private readonly _navigationService: NavigationService;
+  private _bookmarkWebview: vscode.Webview | undefined;
+  private _collectionWebview: vscode.Webview | undefined;
 
   constructor(
     extensionUri: vscode.Uri,
@@ -66,6 +68,11 @@ export class SidebarPanel {
               
               panel.dispose();
               vscode.window.showInformationMessage('书签创建成功！');
+              
+              await this.refreshData();
+              if (this._bookmarkWebview) {
+                await this.renderBookmarkPanel(this._bookmarkWebview);
+              }
             } catch (error) {
               vscode.window.showErrorMessage(`创建书签失败: ${error}`);
             }
@@ -119,6 +126,11 @@ export class SidebarPanel {
               
               panel.dispose();
               vscode.window.showInformationMessage('集合创建成功！');
+              
+              await this.refreshData();
+              if (this._collectionWebview) {
+                await this.renderCollectionPanel(this._collectionWebview);
+              }
             } catch (error) {
               vscode.window.showErrorMessage(`创建集合失败: ${error}`);
             }
@@ -170,17 +182,18 @@ export class SidebarPanel {
           localResourceRoots: [this._extensionUri]
         };
 
-        // 加载初始数据并渲染面板
+        this._bookmarkWebview = webviewView.webview;
+
         this.renderBookmarkPanel(webviewView.webview);
         
-        // 监听数据变化
         const refreshHandler = setInterval(async () => {
           await this._bookmarkService.refresh();
           this.renderBookmarkPanel(webviewView.webview);
-        }, 5000); // 每5秒检查一次更新
+        }, 5000);
         
         webviewView.onDidDispose(() => {
           clearInterval(refreshHandler);
+          this._bookmarkWebview = undefined;
         });
       }
     };
@@ -197,17 +210,18 @@ export class SidebarPanel {
           localResourceRoots: [this._extensionUri]
         };
 
-        // 加载初始数据并渲染面板
+        this._collectionWebview = webviewView.webview;
+
         this.renderCollectionPanel(webviewView.webview);
         
-        // 监听数据变化
         const refreshHandler = setInterval(async () => {
           await this._collectionService.refresh();
           this.renderCollectionPanel(webviewView.webview);
-        }, 5000); // 每5秒检查一次更新
+        }, 5000);
         
         webviewView.onDidDispose(() => {
           clearInterval(refreshHandler);
+          this._collectionWebview = undefined;
         });
       }
     };
