@@ -85,8 +85,9 @@ temp/
 
 # Compiled binary addons
 *.node
-doc/fix-bug.md
-doc/dev-plan.md
-doc/code-manager-plugin.md
-doc/demo-script.md
-doc/dev-plan.md
+
+# Claude AI files
+.claude/
+
+# Documentation
+doc/
